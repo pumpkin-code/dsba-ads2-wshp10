@@ -212,6 +212,10 @@ protected:
 template<typename State, typename Alpha>
 class DfaPlayer {
 public:
+    // aliases for State and Alpha
+    typedef State TState;
+    typedef Alpha TAlpha;
+
     /// Specified DFA (with set state and symbol types).
     typedef Dfa<State, Alpha> SpecDfa;
 
@@ -222,13 +226,32 @@ public:
         NonFinState,        ///< Ended up in a non-accepting state.
     };
 
+    /// Interface for callbacks.
+    class IEventListener {
+    public:
+        /// Called when the current state is being changed.
+        /// \param preS defines previous state.
+        /// \param newS defines new state.
+        virtual void onStateChanging(State preS, State newS) = 0;
+
+        /// Called when a transition is fired.
+        /// \param s defines current state (source).
+        /// \param a defines a symbol activating the transition.
+        /// \param s defines new state (destination).
+        virtual void onTransFired(State s, Alpha a, State d) = 0;
+    protected:
+        ~IEventListener() {}
+    };
+
+
 
 public:
     // Constructors and all.
 
     /// Inititalizes a player with an automaton.
-    DfaPlayer(const SpecDfa& dfa)
+    DfaPlayer(const SpecDfa& dfa, IEventListener* cb = nullptr)
         : _dfa(dfa)
+        , _cb(cb)
     {
         _curPos = -1;           // nothing to replay
     }
@@ -265,6 +288,17 @@ public:
 
     /// Returns the last considered symbol.
     Alpha getLastSymbol() const { return _lastSymb; }
+
+    /// Sets a new event listener.
+    void setEventListener(IEventListener* cb)
+    {
+        _cb = cb;
+    }
+
+    /// Returns the set event listener.
+    IEventListener* getEventListener() const { return _cb; }
+
+
 protected:
 
     /// Initializes the player before the replay.
@@ -272,6 +306,9 @@ protected:
     {
         _curState = _dfa.getInitState();
         _curPos = 0;
+
+        if (_cb)
+            _cb->onStateChanging(_curState, _curState);
     }
 
     /// Tries to replay another given symbol being in the current state.
@@ -284,7 +321,9 @@ protected:
         if(!_dfa.getTrans(_curState, a, nextSt))
             return false;
 
-        // TODO: call back if assigned
+        // call back if assigned
+        if (_cb)
+            _cb->onTransFired(_curState, a, nextSt);
 
         _curState = nextSt;
         ++_curPos;
@@ -300,6 +339,7 @@ protected:
     int _curPos;                        ///< Currently replayed symbol.
     Alpha _lastSymb;                    ///< Stores last replayed symbol.
 
+    IEventListener* _cb;                ///< Callback listener.
 }; //
 
 
