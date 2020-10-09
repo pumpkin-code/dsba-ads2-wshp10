@@ -14,6 +14,7 @@ add_executable(dfa_tests
 )
 
 # add pthread for unix systems
-if (UNIX)
-    target_link_libraries(tests pthread)
-endif ()
+# if u have some problems with this CMakeList try to comment next 3 lines
+#if (UNIX)
+#    target_link_libraries(tests pthread)
+#endif ()
