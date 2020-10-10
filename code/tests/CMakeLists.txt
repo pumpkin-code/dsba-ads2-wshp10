@@ -15,5 +15,5 @@ add_executable(dfa_tests
 
 # add pthread for unix systems
 if (UNIX)
-    target_link_libraries(tests pthread)
+    target_link_libraries(dfa_tests pthread)
 endif ()
